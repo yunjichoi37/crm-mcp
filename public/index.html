@@ -240,8 +240,80 @@
     @keyframes toastIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #1e2533; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* ─── Light Theme ─── */
+    html, body { background: #f8fafc; color: #1e293b; }
+    header { background: #ffffff; border-bottom-color: #e2e8f0; }
+    .logo-text { color: #1e293b; }
+    .h-div { background: #e2e8f0; }
+    .mode-tabs { background: #f1f5f9; border-color: #e2e8f0; }
+    .mode-tab { color: #64748b; }
+    .mode-tab.active { background: #ffffff; color: #6366f1; }
+    .btn { border-color: #e2e8f0; color: #475569; background: transparent; }
+    .btn:hover { border-color: #6366f1; color: #6366f1; background: #f5f3ff; }
+    .btn.primary { background: #6366f1; border-color: #6366f1; color: #fff; }
+    .btn.primary:hover { background: #5558e3; }
+    .sidebar { background: #ffffff; border-right-color: #e2e8f0; }
+    .sb-header { border-bottom-color: #e2e8f0; }
+    .sb-title { color: #94a3b8; }
+    .sb-resizer:hover, .sb-resizer.active { background: #6366f1; }
+    .sb-empty { color: #94a3b8; }
+    .cat-conn-row { color: #475569; }
+    .cat-conn-row:hover { background: #f1f5f9; color: #1e293b; }
+    .cat-conn-chev { color: #94a3b8; }
+    .cat-conn-name { color: inherit; }
+    .cat-table-row { color: #64748b; }
+    .cat-table-row:hover { background: #f1f5f9; color: #334155; }
+    .cat-table-icon { color: #6366f1; }
+    .cat-loading { color: #94a3b8; }
+    .notebook { background: #f8fafc; }
+    .cell { background: #ffffff; border-color: #e2e8f0; }
+    .cell:focus-within { border-color: #bfdbfe; }
+    .cell.running { border-color: #c7d2fe; }
+    .cell.has-error { border-color: #fca5a5; }
+    .cell-hdr { background: #f8fafc; border-bottom-color: #e2e8f0; }
+    .badge.ai { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
+    .badge.sql { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+    .exec-num { color: #94a3b8; }
+    .cell-preview { color: #94a3b8; }
+    .cell-ta { color: #1e293b; }
+    .cell-in.sql .cell-ta { color: #0369a1; }
+    .cell-ta::placeholder { color: #cbd5e1; }
+    .cell-out { background: #f4f7fa; border-top-color: #e2e8f0; }
+    .out-inner { }
+    .running-row { color: #64748b; }
+    .spinner { border-color: #e2e8f0; border-top-color: #6366f1; }
+    .out-answer { color: #334155; }
+    .out-sql-hdr { color: #94a3b8; }
+    .out-sql-hdr:hover { color: #64748b; }
+    .out-sql-body { background: #f1f5f9; border-color: #e2e8f0; color: #0369a1; }
+    .res-tab { border-color: #e2e8f0; color: #94a3b8; background: transparent; }
+    .res-tab.active { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+    .res-stats { color: #94a3b8; }
+    th { background: #f1f5f9; color: #475569; border-bottom-color: #e2e8f0; }
+    td { color: #475569; border-bottom-color: #f1f5f9; }
+    tr:hover td { background: #f8fafc; }
+    .out-error { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+    .welcome h2 { color: #334155; }
+    .welcome p { color: #94a3b8; }
+    .chip { background: #ffffff; border-color: #e2e8f0; color: #64748b; }
+    .chip:hover { border-color: #6366f1; color: #6366f1; background: #f5f3ff; }
+    .chat-area { background: #f8fafc; }
+    .chat-welcome h2 { color: #334155; }
+    .chat-welcome p { color: #94a3b8; }
+    .chat-bubble.ai { background: #ffffff; border-color: #e2e8f0; color: #374151; }
+    .chat-sql-hdr { color: #94a3b8; }
+    .chat-sql-hdr:hover { color: #64748b; }
+    .chat-sql-body { background: #f1f5f9; border-color: #e2e8f0; color: #0369a1; }
+    .chat-result-card { background: #f8fafc; border-color: #e2e8f0; }
+    .chat-input-bar { background: #ffffff; border-top-color: #e2e8f0; }
+    .chat-ta { background: #f8fafc; border-color: #e2e8f0; color: #1e293b; }
+    .chat-ta:focus { border-color: #6366f1; background: #ffffff; }
+    .chat-ta::placeholder { color: #cbd5e1; }
+    .toast { background: #ffffff; border-color: #e2e8f0; color: #475569; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    kbd { background: #f1f5f9 !important; color: #475569; }
   </style>
 </head>
 <body>
@@ -267,7 +339,6 @@
     </div>
     <div class="h-spacer"></div>
     <button class="btn" onclick="toggleSidebar()" title="카탈로그 토글">≡</button>
-    <button class="btn" id="rp-toggle-btn" onclick="toggleRPanel()" title="패널 토글" style="display:none">⚙ 설정</button>
     <button class="btn" onclick="newSession()">↺ 새 세션</button>
   </header>
 
@@ -292,7 +363,7 @@
       <div class="chat-area" id="chat-area">
         <div class="chat-welcome" id="chat-welcome">
           <h2>무엇이든 물어보세요</h2>
-          <p>오른쪽 Data 탭에서 테이블을 선택 후 자연어로 질문하세요</p>
+          <p>Makino CRM 데이터에 대해 자연어로 질문하세요</p>
         </div>
       </div>
       <div class="chat-input-bar">
@@ -320,57 +391,6 @@
       </div>
     </div>
 
-    <!-- Right Panel -->
-    <div class="rpanel open" id="rpanel">
-
-      <!-- Genie Panel (Chat) -->
-      <div id="genie-panel" style="display:flex;flex-direction:column;height:100%">
-        <div class="rp-gtab-bar">
-          <button class="rp-gtab active" id="gtab-data">Data</button>
-          <button class="rp-gclose" onclick="closeRPanel()">×</button>
-        </div>
-
-        <!-- Data pane -->
-        <div class="rp-gpane active" id="rp-gpane-data">
-          <div class="data-toolbar">
-            <div class="data-sel-info">선택된 테이블: <span id="data-sel-cnt">0</span>개</div>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-xs" onclick="clearDataSelection()" title="전체 제거">전체 제거</button>
-              <button class="btn btn-xs primary" onclick="openTablePicker()">+ 테이블 추가</button>
-            </div>
-          </div>
-          <div class="data-list" id="data-list">
-            <div class="data-empty">
-              <div class="data-empty-icon">⊞</div>
-              <div>분석할 테이블을 추가하세요</div>
-              <div style="margin-top:6px;font-size:11px;color:#2a3a50">카탈로그에서 테이블을 선택합니다</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ── Table Picker Popup ── -->
-<div id="picker-modal" class="picker-overlay" style="display:none" onclick="if(event.target===this)closeTablePicker()">
-  <div class="picker-box">
-    <div class="picker-head">
-      <div class="picker-title">테이블 선택 <span style="font-size:11px;color:#334155;font-weight:400">— Makino Cloud</span></div>
-      <input class="picker-search" id="picker-search" type="text" placeholder="🔍 테이블명 또는 한국어로 검색..."
-        oninput="filterPickerTables(this.value)">
-    </div>
-    <div class="picker-body">
-      <div class="picker-list" id="picker-list">
-        <div class="picker-empty">커넥션을 선택하세요</div>
-      </div>
-    </div>
-    <div class="picker-foot">
-      <button class="btn" onclick="closeTablePicker()">취소</button>
-      <button class="btn primary" onclick="confirmTablePick()">확인</button>
-    </div>
   </div>
 </div>
 
@@ -387,41 +407,34 @@ let currentMode  = 'chat';
 
 // Makino Cloud 테이블 카탈로그 (CLAUDE.md 기반)
 const MAKINO_CATALOG = [
-  { domain: '고객/거래처', icon: '🏢', tables: [
+  { domain: '고객/거래처', tables: [
     { name: 'new_q1',  label: '거래처' },
     { name: 'contact', label: '연락처' },
   ]},
-  { domain: '영업', icon: '📈', tables: [
+  { domain: '영업', tables: [
     { name: 'new_q4',         label: '영업문의' },
     { name: 'new_q3',         label: '영업기회' },
     { name: 'new_ordersales', label: '수주 (Order Sales)' },
   ]},
-  { domain: '서비스', icon: '🔧', tables: [
+  { domain: '서비스', tables: [
     { name: 'new_call',  label: '서비스접수' },
     { name: 'new_web',   label: 'Web접수' },
     { name: 'new_q112',  label: '서비스케이스 (A/S)' },
     { name: 'appointment', label: '방문일정 (약속)' },
     { name: 'new_part',  label: '부품사용내역' },
   ]},
-  { domain: '장비/설비', icon: '⚙️', tables: [
+  { domain: '장비/설비', tables: [
     { name: 'new_serial',       label: 'Serial 관리' },
     { name: 'new_seriallist',   label: 'Serial 설치정보' },
     { name: 'new_safeinspection', label: '안전점검' },
   ]},
-  { domain: '구매', icon: '📦', tables: [
+  { domain: '구매', tables: [
     { name: 'new_po', label: 'P.O 관리' },
   ]},
 ];
 
 // 전체 테이블 평면 목록
 const MAKINO_ALL_TABLES = MAKINO_CATALOG.flatMap(g => g.tables.map(t => ({ ...t, domain: g.domain })));
-
-// Data selection: [{table, label, conn_type}]
-let _dataSelection = [];
-
-// Picker state
-let _pickerAllItems = [];
-let _pickerSelected = new Set(); // table name
 
 function mkUUID() {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -436,12 +449,6 @@ function setMode(mode) {
   document.getElementById('nb-controls').style.display = mode === 'notebook' ? 'flex' : 'none';
   document.getElementById('tab-chat').classList.toggle('active', mode === 'chat');
   document.getElementById('tab-nb').classList.toggle('active', mode === 'notebook');
-  const geniePanel = document.getElementById('genie-panel');
-  const rpanel     = document.getElementById('rpanel');
-  const rpToggle   = document.getElementById('rp-toggle-btn');
-  geniePanel.style.display = 'flex';
-  rpanel.classList.add('open');
-  rpToggle.style.display   = '';
 }
 
 // ─── Helpers ─────────────────────────────────────────────
@@ -451,11 +458,7 @@ function renderMd(text) {
   return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function buildMessage(question) {
-  if (!_dataSelection.length) return question;
-  const tables = _dataSelection.map(d => `${d.table}(${d.label})`).join(', ');
-  return `[분석 대상 테이블: ${tables}]\n\n${question}`;
-}
+function buildMessage(question) { return question; }
 
 async function streamChat(message, onText, onTool, onDone, onError) {
   const resp = await fetch('/api/chat', {
@@ -492,7 +495,7 @@ function newSession() {
   w.innerHTML = `<h2>무엇이든 물어보세요</h2>
     <p>오른쪽 Data 탭에서 테이블을 선택 후 자연어로 질문하세요</p>
     <div class="chat-welcome-chips">
-      <span class="chip" onclick="quickChat('고객 TOP 5 보여줘')">고객 TOP 5</span>
+      <span class="chip" onclick="quickChat('담당자별 활성 서비스케이스 개수 알려줘')">담당자별 활성 서비스케이스 개수</span>
       <span class="chip" onclick="quickChat('이번달 매출 합계는?')">이번달 매출</span>
       <span class="chip" onclick="quickChat('최근 주문 10건 보여줘')">최근 주문 10건</span>
     </div>`;
@@ -529,7 +532,6 @@ function saveDefaultTables() {
 
 function renderCatalogTree() {
   const tree = document.getElementById('catalog-tree');
-  // 헤더: Makino Cloud 연결 상태
   tree.innerHTML = `
     <div class="cat-conn">
       <div class="cat-conn-row" style="cursor:default">
@@ -542,16 +544,13 @@ function renderCatalogTree() {
     <div class="cat-conn" id="cat-group-${esc(g.domain)}">
       <div class="cat-conn-row" onclick="toggleGroup('${esc(g.domain)}')">
         <span class="cat-conn-chev" id="cat-chev-${esc(g.domain)}">▶</span>
-        <span class="cat-conn-icon">${g.icon}</span>
         <span class="cat-conn-name">${esc(g.domain)}</span>
       </div>
       <div class="cat-tables" id="cat-tables-${esc(g.domain)}">
         ${g.tables.map(t => `
-          <div class="cat-table-row" onclick="quickAddToData('${esc(t.name)}','${esc(t.label)}')">
-            <span class="cat-table-icon">⊞</span>
+          <div class="cat-table-row">
             <span class="cat-table-name" title="${esc(t.name)}">${esc(t.label)}</span>
-            <span class="cat-table-cnt" style="font-size:9px;color:#2a3a50">${esc(t.name)}</span>
-            <button class="cat-table-add" onclick="event.stopPropagation();quickAddToData('${esc(t.name)}','${esc(t.label)}')" title="Data에 추가">＋</button>
+            <span class="cat-table-cnt" style="font-size:9px;color:#94a3b8">${esc(t.name)}</span>
           </div>`).join('')}
       </div>
     </div>`).join('');
@@ -565,117 +564,6 @@ function toggleGroup(domain) {
   chevEl.classList.toggle('open', !isOpen);
 }
 
-function quickAddToData(tableName, label) {
-  if (_dataSelection.some(d => d.table === tableName)) {
-    toast(`이미 추가됨: ${label}`); return;
-  }
-  _dataSelection.push({ table: tableName, label, conn_type: 'dataverse' });
-  renderDataList();
-  saveDefaultTables();
-  switchGenieTab('data');
-  document.getElementById('rpanel').classList.add('open');
-  toast(`추가됨: ${label}`);
-}
-
-
-// ─── Data Panel ───────────────────────────────────────────
-function renderDataList() {
-  const el = document.getElementById('data-list');
-  document.getElementById('data-sel-cnt').textContent = _dataSelection.length;
-  if (!_dataSelection.length) {
-    el.innerHTML = `<div class="data-empty">
-      <div class="data-empty-icon">⊞</div>
-      <div>분석할 테이블을 추가하세요</div>
-      <div style="margin-top:6px;font-size:11px;color:#2a3a50">카탈로그에서 테이블을 선택합니다</div>
-    </div>`;
-    return;
-  }
-  el.innerHTML = _dataSelection.map((d, i) => `
-    <div class="data-item">
-      <span class="data-item-icon">⊞</span>
-      <div class="data-item-info">
-        <div class="data-item-name">${esc(d.label || d.table)}</div>
-        <div class="data-item-conn">
-          <span class="data-conn-badge dataverse">Makino Cloud</span>
-          ${esc(d.table)}
-        </div>
-      </div>
-      <button class="data-item-del" onclick="removeDataItem(${i})" title="제거">×</button>
-    </div>`).join('');
-}
-
-function removeDataItem(i) {
-  _dataSelection.splice(i, 1);
-  renderDataList();
-  saveDefaultTables();
-}
-
-function clearDataSelection() {
-  _dataSelection = [];
-  renderDataList();
-  saveDefaultTables();
-}
-
-// ─── Table Picker Popup ───────────────────────────────────
-function openTablePicker() {
-  _pickerSelected = new Set(_dataSelection.map(d => d.table));
-  _pickerAllItems = MAKINO_ALL_TABLES;
-  document.getElementById('picker-search').value = '';
-  renderPickerList(_pickerAllItems);
-  document.getElementById('picker-modal').style.display = 'flex';
-}
-
-function closeTablePicker() {
-  document.getElementById('picker-modal').style.display = 'none';
-}
-
-function renderPickerList(items) {
-  const el = document.getElementById('picker-list');
-  if (!items.length) { el.innerHTML = '<div class="picker-empty">검색 결과 없음</div>'; return; }
-  el.innerHTML = items.map(t => {
-    const sel = _pickerSelected.has(t.name);
-    return `<div class="picker-item ${sel ? 'selected' : ''}" onclick="togglePickerItem('${esc(t.name)}',this)">
-      <input type="checkbox" class="picker-chk" ${sel ? 'checked' : ''} onclick="event.stopPropagation();togglePickerItem('${esc(t.name)}',this.closest('.picker-item'))">
-      <span class="picker-item-name">
-        ${esc(t.label)}
-        <span style="color:#2a3a50;font-size:10px;margin-left:6px">${esc(t.name)}</span>
-      </span>
-      <span class="picker-item-cnt">${esc(t.domain)}</span>
-    </div>`;
-  }).join('');
-}
-
-function togglePickerItem(name, rowEl) {
-  if (_pickerSelected.has(name)) {
-    _pickerSelected.delete(name);
-    rowEl.classList.remove('selected');
-    rowEl.querySelector('input[type=checkbox]').checked = false;
-  } else {
-    _pickerSelected.add(name);
-    rowEl.classList.add('selected');
-    rowEl.querySelector('input[type=checkbox]').checked = true;
-  }
-}
-
-function filterPickerTables(q) {
-  const filtered = q
-    ? MAKINO_ALL_TABLES.filter(t =>
-        t.label.toLowerCase().includes(q.toLowerCase()) ||
-        t.name.toLowerCase().includes(q.toLowerCase()) ||
-        t.domain.toLowerCase().includes(q.toLowerCase()))
-    : MAKINO_ALL_TABLES;
-  renderPickerList(filtered);
-}
-
-function confirmTablePick() {
-  _dataSelection = MAKINO_ALL_TABLES
-    .filter(t => _pickerSelected.has(t.name))
-    .map(t => ({ table: t.name, label: t.label, conn_type: 'dataverse' }));
-  renderDataList();
-  saveDefaultTables();
-  closeTablePicker();
-  toast(`${_dataSelection.length}개 테이블 선택됨`);
-}
 
 // ─── Chat ─────────────────────────────────────────────────
 async function sendChat() {
@@ -802,7 +690,7 @@ function addCell(type, text = '') {
   const id = ++CELL_N;
   CELLS.set(id, { type });
   document.getElementById('welcome-msg').style.display = 'none';
-  const ph = type === 'ai' ? '자연어로 질문하세요 (예: 고객 TOP 5 보여줘)' : 'SELECT * FROM table_name LIMIT 10';
+  const ph = type === 'ai' ? '자연어로 질문하세요 (예: 담당자별 활성 서비스케이스 개수 알려줘)' : 'SELECT * FROM table_name TOP 10';
   const el = document.createElement('div');
   el.className = 'cell'; el.id = `cell-${id}`;
   el.innerHTML = `<div class="cell-hdr">
@@ -947,14 +835,6 @@ function renderSQLOut(id, d, n) {
   </div>`;
 }
 
-// ─── Right Panel ──────────────────────────────────────────
-function closeRPanel()  { document.getElementById('rpanel').classList.remove('open'); }
-function toggleRPanel() { document.getElementById('rpanel').classList.toggle('open'); }
-
-// ─── Genie Tabs ───────────────────────────────────────────
-function switchGenieTab(tab) {
-  // Only 'data' tab remains — kept for compatibility with callers
-}
 
 // ─── Shared Helpers ───────────────────────────────────────
 function downloadCSV(tblId) {
