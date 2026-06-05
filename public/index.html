@@ -157,6 +157,13 @@
     .typing-dot:nth-child(3) { animation-delay: 0.4s; }
     @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
     .chat-extras { margin-top: 8px; width: 100%; }
+    .tbl-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 6px; }
+    .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .tbl th { background: #f1f5f9; color: #475569; font-weight: 600; padding: 7px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+    .tbl td { padding: 6px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; white-space: nowrap; }
+    .tbl tbody tr:last-child td { border-bottom: none; }
+    .tbl tbody tr:hover td { background: #f8fafc; }
+    .tbl-count { font-size: 11px; color: #94a3b8; margin-top: 4px; }
     .chat-sql { margin-bottom: 8px; }
     .chat-sql-hdr { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #334155; cursor: pointer; padding: 2px 0; user-select: none; }
     .chat-sql-hdr:hover { color: #64748b; }
@@ -460,7 +467,18 @@ function renderMd(text) {
 
 function buildMessage(question) { return question; }
 
-async function streamChat(message, onText, onTool, onDone, onError) {
+function renderTable(rows) {
+  if (!rows || rows.length === 0) return '';
+  const keys = Object.keys(rows[0]);
+  const header = keys.map(k => `<th>${esc(k)}</th>`).join('');
+  const body = rows.map(row =>
+    `<tr>${keys.map(k => `<td>${esc(String(row[k] ?? ''))}</td>`).join('')}</tr>`
+  ).join('');
+  return `<div class="tbl-wrap"><table class="tbl"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>
+          <div class="tbl-count">${rows.length.toLocaleString()}건</div>`;
+}
+
+async function streamChat(message, onText, onTool, onTable, onDone, onError) {
   const resp = await fetch('/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, sessionId: SESSION_ID }),
@@ -479,6 +497,7 @@ async function streamChat(message, onText, onTool, onDone, onError) {
       let ev; try { ev = JSON.parse(line.slice(6)); } catch { continue; }
       if      (ev.type === 'text')  onText?.(ev.text);
       else if (ev.type === 'tool')  onTool?.(ev.name);
+      else if (ev.type === 'table') onTable?.(ev.rows);
       else if (ev.type === 'done')  onDone?.();
       else if (ev.type === 'error') onError?.(ev.message);
     }
@@ -588,6 +607,14 @@ async function sendChat() {
         const b = document.getElementById(`cbubble-${mid}`);
         if (b) { b.dataset.status = '1'; b.dataset.acc = b.dataset.acc || ''; b.innerHTML = `<span style="color:#475569">🔍 ${esc(name)} 조회 중...</span>`; }
       },
+      (rows) => {  // onTable
+        try {
+          if (mid === null) { removeTyping(typingId); mid = beginStreamBubble(); }
+          const extras = document.getElementById(`cextras-${mid}`);
+          if (extras) extras.insertAdjacentHTML('beforeend', renderTable(rows));
+          document.getElementById('chat-area').scrollTop = 9999;
+        } catch(e) { console.error('table render error:', e, rows); }
+      },
       () => {      // onDone
         if (mid === null) { removeTyping(typingId); mid = beginStreamBubble(); }
         finalizeStreamBubble(mid);
@@ -599,7 +626,7 @@ async function sendChat() {
     );
   } catch(err) {
     removeTyping(typingId);
-    appendChatMsg('ai', `오류: ${err.message}`, true);
+    appendChatMsg('ai', `오류: ${err?.message || String(err)}`, true);
   } finally {
     document.getElementById('chat-send-btn').disabled = false;
   }
@@ -774,6 +801,7 @@ async function runAI(id, question, n) {
     buildMessage(question),
     (text) => { acc += text; ansEl.innerHTML = renderMd(acc); outEl.closest('.notebook')?.scrollBy(0, 99); },
     (name) => { ansEl.innerHTML = `<span style="color:#475569">🔍 ${esc(name)} 조회 중...</span>`; },
+    (rows) => { ansEl.insertAdjacentHTML('beforeend', renderTable(rows)); },
     ()     => { ansEl.innerHTML = renderMd(acc); },
     (msg)  => { ansEl.innerHTML = `<span style="color:#f87171">오류: ${esc(msg)}</span>`; },
   );
@@ -790,6 +818,7 @@ async function runSQL(id, sql, n) {
     msg,
     (text) => { acc += text; ansEl.innerHTML = renderMd(acc); },
     (name) => { ansEl.innerHTML = `<span style="color:#475569">🔍 ${esc(name)} 조회 중...</span>`; },
+    (rows) => { ansEl.insertAdjacentHTML('beforeend', renderTable(rows)); },
     ()     => { ansEl.innerHTML = renderMd(acc); },
     (msg)  => { ansEl.innerHTML = `<span style="color:#f87171">오류: ${esc(msg)}</span>`; },
   );

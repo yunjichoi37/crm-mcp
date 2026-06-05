@@ -64,6 +64,7 @@ app.post('/api/chat', (req, res) => {
   let lastText = '';
   let newSessionId = null;
   let finished = false;
+  let lastToolName = null;
 
   const send = (data) => {
     if (!res.writableEnded) {
@@ -98,9 +99,32 @@ app.post('/api/chat', (req, res) => {
                 lastText = block.text;
               }
             } else if (block.type === 'tool_use') {
-              // MCP 툴 호출 시 로딩 표시
+              lastToolName = block.name;
               const toolName = block.name.replace('mcp__dataverse__', '');
               send({ type: 'tool', name: toolName });
+            }
+          }
+        }
+
+        // read_query 결과를 가로채서 raw JSON으로 전송 (프론트가 HTML 테이블로 렌더링)
+        if (event.type === 'user' && lastToolName === 'mcp__dataverse__read_query') {
+          const content = event.message?.content || [];
+          for (const block of content) {
+            if (block.type === 'tool_result') {
+              let resultText = '';
+              if (typeof block.content === 'string') {
+                resultText = block.content;
+              } else if (Array.isArray(block.content)) {
+                const tb = block.content.find(b => b.type === 'text');
+                if (tb) resultText = tb.text;
+              }
+              try {
+                const parsed = JSON.parse(resultText);
+                const rows = Array.isArray(parsed) ? parsed : (parsed.value || []);
+                if (Array.isArray(rows) && rows.length > 0 && typeof rows[0] === 'object') {
+                  send({ type: 'table', rows });
+                }
+              } catch(e) { console.error('[table parse error]', e.message); }
             }
           }
         }
