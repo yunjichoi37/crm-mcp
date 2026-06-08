@@ -65,6 +65,7 @@ app.post('/api/chat', (req, res) => {
   let newSessionId = null;
   let finished = false;
   let lastToolName = null;
+  let lastSql = null;
 
   const send = (data) => {
     if (!res.writableEnded) {
@@ -100,6 +101,9 @@ app.post('/api/chat', (req, res) => {
               }
             } else if (block.type === 'tool_use') {
               lastToolName = block.name;
+              if (block.name === 'mcp__dataverse__read_query') {
+                lastSql = block.input?.query || block.input?.sql || JSON.stringify(block.input);
+              }
               const toolName = block.name.replace('mcp__dataverse__', '');
               send({ type: 'tool', name: toolName });
             }
@@ -121,10 +125,15 @@ app.post('/api/chat', (req, res) => {
               try {
                 const parsed = JSON.parse(resultText);
                 const rows = Array.isArray(parsed) ? parsed : (parsed.value || []);
+                console.log('[SQL 성공]', lastSql);
+                console.log('[SQL 결과]', rows.length, '건');
                 if (Array.isArray(rows) && rows.length > 0 && typeof rows[0] === 'object') {
                   send({ type: 'table', rows });
                 }
-              } catch(e) { console.error('[table parse error]', e.message); }
+              } catch {
+                console.error('[SQL 실패]', lastSql);
+                console.error('[SQL 에러]', resultText.slice(0, 200));
+              }
             }
           }
         }
@@ -168,6 +177,77 @@ app.post('/api/chat', (req, res) => {
   // req.on('close')는 POST body 전송 후 half-close로 너무 일찍 발화 → res.on('close') 사용
   res.on('close', () => {
     if (!claude.killed) claude.kill();
+  });
+});
+
+// SQL 직접 실행 엔드포인트 — LLM 텍스트 생성 없이 read_query 결과만 반환
+app.post('/api/sql', (req, res) => {
+  const { sql } = req.body;
+  if (!sql) return res.status(400).json({ error: 'sql 필요' });
+
+  const prompt = `다음 SQL을 mcp__dataverse__read_query 툴로 실행해줘. 다른 툴은 호출하지 마: ${sql}`;
+  const claude = spawn(CLAUDE_BIN, [
+    '-p', prompt,
+    '--output-format', 'stream-json',
+    '--verbose',
+    '--dangerously-skip-permissions',
+  ], { cwd: CWD, shell: false, stdio: ['ignore', 'pipe', 'pipe'], env: process.env });
+
+  claude.stdout.setEncoding('utf8');
+  claude.stderr.setEncoding('utf8');
+
+  let buffer = '';
+  let lastToolName = null;
+  let rows = null;
+  let queryError = null;
+
+  claude.stdout.on('data', (chunk) => {
+    buffer += chunk;
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      try {
+        const event = JSON.parse(trimmed);
+        if (event.type === 'assistant') {
+          for (const block of (event.message?.content || [])) {
+            if (block.type === 'tool_use') lastToolName = block.name;
+          }
+        }
+        if (event.type === 'user' && lastToolName === 'mcp__dataverse__read_query') {
+          for (const block of (event.message?.content || [])) {
+            if (block.type === 'tool_result') {
+              let text = typeof block.content === 'string' ? block.content
+                : block.content?.find?.(b => b.type === 'text')?.text || '';
+              console.log('[sql] tool_result:', text.slice(0, 300));
+              try {
+                const parsed = JSON.parse(text);
+                rows = Array.isArray(parsed) ? parsed : (parsed.value || []);
+              } catch {
+                queryError = text || '알 수 없는 오류';
+              }
+              if (!claude.killed) claude.kill();
+            }
+          }
+        }
+      } catch {}
+    }
+  });
+
+  claude.stderr.on('data', (d) => {
+    const t = d.toString();
+    if (!t.includes('Warning:') && !t.includes('warning:')) console.error('[sql stderr]', t.trim());
+  });
+
+  claude.on('close', () => {
+    if (rows !== null) res.json({ rows });
+    else if (queryError) res.status(400).json({ error: queryError });
+    else if (!res.headersSent) res.status(500).json({ error: '쿼리 결과를 가져오지 못했습니다.' });
+  });
+
+  claude.on('error', (err) => {
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   });
 });
 

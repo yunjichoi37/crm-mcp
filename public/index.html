@@ -808,20 +808,24 @@ async function runAI(id, question, n) {
 }
 
 async function runSQL(id, sql, n) {
-  // SQL 직접 실행 엔드포인트 없음 → Claude에게 실행 요청
   const outEl = document.getElementById(`out-${id}`);
-  outEl.innerHTML = '<div class="out-inner"><div class="out-answer"></div></div>';
-  const ansEl = outEl.querySelector('.out-answer');
-  let acc = '';
-  const msg = `다음 SQL을 Dataverse에서 실행하고 결과를 표로 보여줘:\n\`\`\`sql\n${sql}\n\`\`\``;
-  await streamChat(
-    msg,
-    (text) => { acc += text; ansEl.innerHTML = renderMd(acc); },
-    (name) => { ansEl.innerHTML = `<span style="color:#475569">🔍 ${esc(name)} 조회 중...</span>`; },
-    (rows) => { ansEl.insertAdjacentHTML('beforeend', renderTable(rows)); },
-    ()     => { ansEl.innerHTML = renderMd(acc); },
-    (msg)  => { ansEl.innerHTML = `<span style="color:#f87171">오류: ${esc(msg)}</span>`; },
-  );
+  outEl.innerHTML = '<div class="out-inner"><div class="running-row"><div class="spinner"></div><span>SQL 실행 중...</span></div></div>';
+  try {
+    const resp = await fetch('/api/sql', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sql }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) {
+      outEl.innerHTML = `<div class="out-inner"><div class="out-error">오류: ${esc(data.error || resp.status)}</div></div>`;
+    } else if (!data.rows || data.rows.length === 0) {
+      outEl.innerHTML = `<div class="out-inner"><div class="out-answer">해당 조건에 맞는 데이터가 없습니다.</div></div>`;
+    } else {
+      outEl.innerHTML = `<div class="out-inner">${renderTable(data.rows)}</div>`;
+    }
+  } catch(err) {
+    outEl.innerHTML = `<div class="out-inner"><div class="out-error">오류: ${esc(err.message)}</div></div>`;
+  }
 }
 
 function renderAIOut(id, d, n) {
