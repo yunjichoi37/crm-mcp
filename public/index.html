@@ -478,10 +478,7 @@ function renderTable(rows) {
     `<tr>${keys.map(k => `<td>${esc(String(row[k] ?? ''))}</td>`).join('')}</tr>`
   ).join('');
   return `<div class="tbl-wrap" id="${tblId}"><table class="tbl"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-            <span class="tbl-count">${rows.length.toLocaleString()}건</span>
-            <button class="btn btn-xs" onclick="downloadCSV('${tblId}')">↓ CSV</button>
-          </div>`;
+          <div class="tbl-count">${rows.length.toLocaleString()}건</div>`;
 }
 
 async function streamChat(message, onText, onTool, onTable, onDone, onError, signal) {
