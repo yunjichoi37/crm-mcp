@@ -409,6 +409,7 @@ let CELL_N       = 0;
 let CHAT_N       = 0;
 let CHAT_TABLE_N = 0;
 let currentAbortController = null;
+const CELL_ABORTS = new Map();
 const CELLS      = new Map();
 const CHARTS     = new Map();
 let _lastFocusedTA = null;
@@ -796,44 +797,65 @@ async function runCell(id) {
   const enEl = document.getElementById(`en-${id}`);
   destroyChart(id);
   el.classList.add('running'); el.classList.remove('has-error');
-  rBtn.disabled = true; rBtn.textContent = '⏳';
+  const abort = new AbortController();
+  CELL_ABORTS.set(id, abort);
+  rBtn.textContent = '⏹ 취소';
+  rBtn.onclick = () => abort.abort();
   enEl.innerHTML = 'In [*]:';
   outEl.classList.remove('hidden');
   outEl.innerHTML = `<div class="out-inner"><div class="running-row"><div class="spinner"></div><span>${cell.type === 'ai' ? 'AI 분석 중...' : 'SQL 실행 중...'}</span></div></div>`;
   const n = ++EXEC_N;
   try {
-    if (cell.type === 'ai') await runAI(id, input, n);
-    else await runSQL(id, input, n);
-    enEl.innerHTML = `In [${n}]:`;
-    el.classList.remove('running');
+    if (cell.type === 'ai') await runAI(id, input, n, abort.signal);
+    else await runSQL(id, input, n, abort.signal);
   } catch(err) {
-    el.classList.remove('running'); el.classList.add('has-error');
-    outEl.innerHTML = `<div class="out-inner"><div class="out-error">오류: ${esc(err.message)}</div></div>`;
-  } finally { rBtn.disabled = false; rBtn.textContent = '▶ 실행'; }
+    if (err.name !== 'AbortError') {
+      el.classList.add('has-error');
+      outEl.innerHTML = `<div class="out-inner"><div class="out-error">오류: ${esc(err.message)}</div></div>`;
+    }
+  } finally {
+    CELL_ABORTS.delete(id);
+    el.classList.remove('running');
+    enEl.innerHTML = `In [${n}]:`;
+    rBtn.textContent = '▶ 실행';
+    rBtn.onclick = () => runCell(id);
+    rBtn.disabled = false;
+  }
 }
 
-async function runAI(id, question, n) {
+async function runAI(id, question, n, signal) {
   const outEl = document.getElementById(`out-${id}`);
   outEl.innerHTML = '<div class="out-inner"><div class="out-answer"></div></div>';
   const ansEl = outEl.querySelector('.out-answer');
   let acc = '';
-  await streamChat(
-    buildMessage(question),
-    (text) => { acc += text; ansEl.innerHTML = renderMd(acc); outEl.closest('.notebook')?.scrollBy(0, 99); },
-    (name) => { ansEl.innerHTML = `<span style="color:#475569">🔍 ${esc(name)} 조회 중...</span>`; },
-    (rows) => { ansEl.insertAdjacentHTML('beforeend', renderTable(rows)); },
-    ()     => { ansEl.innerHTML = renderMd(acc); },
-    (msg)  => { ansEl.innerHTML = `<span style="color:#f87171">오류: ${esc(msg)}</span>`; },
-  );
+  try {
+    await streamChat(
+      buildMessage(question),
+      (text) => { acc += text; ansEl.innerHTML = renderMd(acc); outEl.closest('.notebook')?.scrollBy(0, 99); },
+      (name) => { ansEl.innerHTML = `<span style="color:#475569">🔍 ${esc(name)} 조회 중...</span>`; },
+      (rows) => { ansEl.insertAdjacentHTML('beforeend', renderTable(rows)); },
+      ()     => { ansEl.innerHTML = renderMd(acc); },
+      (msg)  => { ansEl.innerHTML = `<span style="color:#f87171">오류: ${esc(msg)}</span>`; },
+      signal,
+    );
+  } catch(err) {
+    if (err.name === 'AbortError') {
+      if (acc) ansEl.innerHTML = renderMd(acc);
+      else ansEl.innerHTML = '<span style="color:#94a3b8">취소되었습니다.</span>';
+    } else {
+      throw err;
+    }
+  }
 }
 
-async function runSQL(id, sql, n) {
+async function runSQL(id, sql, n, signal) {
   const outEl = document.getElementById(`out-${id}`);
   outEl.innerHTML = '<div class="out-inner"><div class="running-row"><div class="spinner"></div><span>SQL 실행 중...</span></div></div>';
   try {
     const resp = await fetch('/api/sql', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sql }),
+      signal,
     });
     const data = await resp.json();
     if (!resp.ok || data.error) {
@@ -844,7 +866,11 @@ async function runSQL(id, sql, n) {
       outEl.innerHTML = `<div class="out-inner">${renderTable(data.rows)}</div>`;
     }
   } catch(err) {
-    outEl.innerHTML = `<div class="out-inner"><div class="out-error">오류: ${esc(err.message)}</div></div>`;
+    if (err.name === 'AbortError') {
+      outEl.innerHTML = '<div class="out-inner"><span style="color:#94a3b8">취소되었습니다.</span></div>';
+    } else {
+      outEl.innerHTML = `<div class="out-inner"><div class="out-error">오류: ${esc(err.message)}</div></div>`;
+    }
   }
 }
 
