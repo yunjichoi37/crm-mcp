@@ -334,8 +334,8 @@
     </div>
     <div class="h-div"></div>
     <div class="mode-tabs">
-      <button class="mode-tab" id="tab-chat" disabled title="기본 모드 준비 중">💬 기본</button>
-      <button class="mode-tab active" id="tab-nb" onclick="setMode('notebook')">⌨ 고급</button>
+      <button class="mode-tab active" id="tab-chat" onclick="setMode('chat')">💬 기본</button>
+      <button class="mode-tab" id="tab-nb" onclick="setMode('notebook')">⌨ 고급</button>
     </div>
     <div class="h-div"></div>
     <div class="nb-only" id="nb-controls" style="display:none">
@@ -407,6 +407,8 @@ let SESSION_ID   = mkUUID();
 let EXEC_N       = 0;
 let CELL_N       = 0;
 let CHAT_N       = 0;
+let CHAT_TABLE_N = 0;
+let currentAbortController = null;
 const CELLS      = new Map();
 const CHARTS     = new Map();
 let _lastFocusedTA = null;
@@ -470,37 +472,46 @@ function buildMessage(question) { return question; }
 function renderTable(rows) {
   if (!rows || rows.length === 0) return '';
   const keys = Object.keys(rows[0]);
+  const tblId = `ctbl-${++CHAT_TABLE_N}`;
   const header = keys.map(k => `<th>${esc(k)}</th>`).join('');
   const body = rows.map(row =>
     `<tr>${keys.map(k => `<td>${esc(String(row[k] ?? ''))}</td>`).join('')}</tr>`
   ).join('');
-  return `<div class="tbl-wrap"><table class="tbl"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>
-          <div class="tbl-count">${rows.length.toLocaleString()}건</div>`;
+  return `<div class="tbl-wrap" id="${tblId}"><table class="tbl"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            <span class="tbl-count">${rows.length.toLocaleString()}건</span>
+            <button class="btn btn-xs" onclick="downloadCSV('${tblId}')">↓ CSV</button>
+          </div>`;
 }
 
-async function streamChat(message, onText, onTool, onTable, onDone, onError) {
+async function streamChat(message, onText, onTool, onTable, onDone, onError, signal) {
   const resp = await fetch('/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, sessionId: SESSION_ID }),
+    signal,
   });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buf = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split('\n'); buf = lines.pop();
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      let ev; try { ev = JSON.parse(line.slice(6)); } catch { continue; }
-      if      (ev.type === 'text')  onText?.(ev.text);
-      else if (ev.type === 'tool')  onTool?.(ev.name);
-      else if (ev.type === 'table') onTable?.(ev.rows);
-      else if (ev.type === 'done')  onDone?.();
-      else if (ev.type === 'error') onError?.(ev.message);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let ev; try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+        if      (ev.type === 'text')  onText?.(ev.text);
+        else if (ev.type === 'tool')  onTool?.(ev.name);
+        else if (ev.type === 'table') onTable?.(ev.rows);
+        else if (ev.type === 'done')  onDone?.();
+        else if (ev.type === 'error') onError?.(ev.message);
+      }
     }
+  } finally {
+    reader.cancel();
   }
 }
 
@@ -593,7 +604,11 @@ async function sendChat() {
   document.getElementById('chat-welcome') && (document.getElementById('chat-welcome').style.display = 'none');
   appendChatMsg('user', q);
   const typingId = appendTyping();
-  document.getElementById('chat-send-btn').disabled = true;
+  const sendBtn = document.getElementById('chat-send-btn');
+  currentAbortController = new AbortController();
+  sendBtn.textContent = '취소';
+  sendBtn.onclick = () => currentAbortController?.abort();
+  sendBtn.classList.remove('primary');
   let mid = null;
   try {
     await streamChat(
@@ -623,12 +638,20 @@ async function sendChat() {
         removeTyping(typingId);
         appendChatMsg('ai', `오류: ${msg}`, true);
       },
+      currentAbortController.signal,
     );
   } catch(err) {
     removeTyping(typingId);
-    appendChatMsg('ai', `오류: ${err?.message || String(err)}`, true);
+    if (err.name === 'AbortError') {
+      if (mid !== null) finalizeStreamBubble(mid);
+    } else {
+      appendChatMsg('ai', `오류: ${err?.message || String(err)}`, true);
+    }
   } finally {
-    document.getElementById('chat-send-btn').disabled = false;
+    currentAbortController = null;
+    sendBtn.textContent = '전송';
+    sendBtn.onclick = sendChat;
+    sendBtn.classList.add('primary');
   }
 }
 
@@ -717,7 +740,7 @@ function addCell(type, text = '') {
   const id = ++CELL_N;
   CELLS.set(id, { type });
   document.getElementById('welcome-msg').style.display = 'none';
-  const ph = type === 'ai' ? '자연어로 질문하세요 (예: 담당자별 활성 서비스케이스 개수 알려줘)' : 'SELECT * FROM table_name TOP 10';
+  const ph = type === 'ai' ? '자연어로 질문하세요 (예: 담당자별 활성 서비스케이스 개수 알려줘)' : 'SELECT TOP 10 * FROM table_name';
   const el = document.createElement('div');
   el.className = 'cell'; el.id = `cell-${id}`;
   el.innerHTML = `<div class="cell-hdr">
@@ -1004,7 +1027,7 @@ function quickAsk(q) {
 })();
 
 // ─── Init ─────────────────────────────────────────────────
-setMode('notebook');
+setMode('chat');
 loadCatalog();  // 동기: Makino 카탈로그 렌더링 + localStorage 복원
 </script>
 </body>
