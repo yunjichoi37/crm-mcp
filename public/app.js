@@ -645,6 +645,22 @@ function quickAsk(q) {
   function up()  { resizer.classList.remove('active'); document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); }
 })();
 
+// ─── Theme ────────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-btn').textContent = isDark ? '☀' : '🌙';
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const useDark = saved === 'dark' || (!saved && prefersDark);
+  if (useDark) document.documentElement.classList.add('dark');
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = useDark ? '☀' : '🌙';
+})();
+
 // ─── Init ─────────────────────────────────────────────────
 setMode('chat');
 loadCatalog();  // 동기: Makino 카탈로그 렌더링 + localStorage 복원
