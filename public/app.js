@@ -142,16 +142,7 @@ function toggleSidebar() {
 
 // ─── Catalog Tree (Makino Cloud) ──────────────────────────
 function loadCatalog() {
-  // localStorage에서 저장된 기본 테이블 복원
-  try {
-    const saved = JSON.parse(localStorage.getItem('makino_default_tables') || '[]');
-    if (saved.length) { _dataSelection = saved; renderDataList(); }
-  } catch {}
   renderCatalogTree();
-}
-
-function saveDefaultTables() {
-  try { localStorage.setItem('makino_default_tables', JSON.stringify(_dataSelection)); } catch {}
 }
 
 function renderCatalogTree() {
@@ -311,23 +302,6 @@ function appendTyping() {
 
 function removeTyping(id) { document.getElementById(`typing-${id}`)?.remove(); }
 
-function toggleChatSQL(mid) {
-  const b = document.getElementById(`csqb-${mid}`);
-  const c = document.getElementById(`csc-${mid}`);
-  if (!b) return;
-  const show = b.style.display === 'none';
-  b.style.display = show ? 'block' : 'none';
-  c.textContent = show ? '▼' : '▶';
-}
-
-function switchChatTab(mid, tab) {
-  const card = document.getElementById(`cmsg-${mid}`)?.querySelector('.chat-result-card');
-  if (!card) return;
-  card.querySelectorAll('.res-tab').forEach((t, i) =>
-    t.classList.toggle('active', (tab==='table'&&i===0)||(tab==='chart'&&i===1)));
-  document.getElementById(`crt-${mid}`)?.classList.toggle('active', tab === 'table');
-  document.getElementById(`crc-${mid}`)?.classList.toggle('active', tab === 'chart');
-}
 
 // ─── Notebook ─────────────────────────────────────────────
 function addCell(type, text = '') {
@@ -470,68 +444,7 @@ async function runSQL(id, sql, n, signal) {
   }
 }
 
-function renderAIOut(id, d, n) {
-  const outEl = document.getElementById(`out-${id}`);
-  document.getElementById(`en-${id}`).innerHTML = `Out [${n}]:`;
-  const hasRows = d.result?.length > 0;
-  const hasCols = hasRows ? Object.keys(d.result[0]) : [];
-  const hasChart = d.chart_data?.labels?.length > 0;
-  let h = '<div class="out-inner">';
-  if (d.answer) h += `<div class="out-answer">${esc(d.answer)}</div>`;
-  if (d.sql) h += `<div class="out-sql"><div class="out-sql-hdr" onclick="toggleSQLBlock(${id})">
-    <span class="sql-chev" id="sc-${id}">▶</span><span>📝 생성된 SQL</span>
-  </div><div class="out-sql-body" id="sqb-${id}" style="display:none">${esc(d.sql)}</div></div>`;
-  if (hasRows) {
-    h += `<div class="res-meta"><div class="res-tabs">
-      <button class="res-tab active" onclick="switchTab(${id},'table')">표</button>
-      ${hasChart ? `<button class="res-tab" onclick="switchTab(${id},'chart')">차트</button>` : ''}
-    </div><span class="res-stats">${d.result.length}행 · ${d.execution_time_ms}ms</span></div>
-    <div class="res-tbl active" id="rt-${id}">${buildTable(hasCols, d.result)}</div>
-    ${hasChart ? `<div class="res-chart" id="rc-${id}"><div class="chart-box"><canvas id="cv-${id}"></canvas></div></div>` : ''}`;
-  }
-  h += '</div>';
-  outEl.innerHTML = h;
-  if (hasChart) drawChart(`cv-${id}`, d.chart_data);
-}
-
-function renderSQLOut(id, d, n) {
-  const outEl = document.getElementById(`out-${id}`);
-  document.getElementById(`en-${id}`).innerHTML = `Out [${n}]:`;
-  if (!d.rows?.length) {
-    outEl.innerHTML = `<div class="out-inner"><div class="out-answer" style="color:#334155">결과 없음 (${d.execution_time_ms}ms)</div></div>`;
-    return;
-  }
-  const cell = CELLS.get(id);
-  cell.rows = d.rows; cell.columns = d.columns;
-  outEl.innerHTML = `<div class="out-inner"><div class="res-meta"><div class="res-tabs">
-    <button class="res-tab active">표</button>
-  </div><span class="res-stats">${d.row_count}행 · ${d.execution_time_ms}ms</span></div>
-  <div class="res-tbl active" id="rt-${id}">${buildTable(d.columns, d.rows)}</div>
-  </div>`;
-}
-
-
 // ─── Shared Helpers ───────────────────────────────────────
-function downloadCSV(tblId) {
-  const tbl = document.getElementById(tblId)?.querySelector('table'); if (!tbl) return;
-  const rows = Array.from(tbl.querySelectorAll('tr')).map(tr =>
-    Array.from(tr.querySelectorAll('th,td')).map(c => `"${c.textContent.replace(/"/g,'""')}"`).join(','));
-  const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `result_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`;
-  a.click();
-}
-
-function buildTable(cols, rows) {
-  if (!rows?.length) return '<div style="color:#334155;font-size:12px;padding:6px 0">결과 없음</div>';
-  let h = '<table><thead><tr>' + cols.map(c => `<th>${esc(String(c))}</th>`).join('') + '</tr></thead><tbody>';
-  for (const row of rows.slice(0,200))
-    h += '<tr>' + cols.map(c => `<td title="${esc(String(row[c]??''))}">${esc(String(row[c]??''))}</td>`).join('') + '</tr>';
-  h += '</tbody></table>';
-  if (rows.length > 200) h += `<div style="font-size:11px;color:#334155;padding:4px 0">…${rows.length-200}행 더 있음</div>`;
-  return h;
-}
 
 function switchTab(id, tab) {
   document.querySelectorAll(`#out-${id} .res-tab`).forEach((t,i) =>
