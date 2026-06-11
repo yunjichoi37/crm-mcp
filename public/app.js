@@ -124,7 +124,7 @@ function newSession() {
       <span class="chip" onclick="quickChat('최근 주문 10건 보여줘')">최근 주문 10건</span>
     </div>`;
   area.appendChild(w);
-  CHAT_N = 0;
+  CHAT_N = 0; CHAT_TABLE_N = 0;
   CHARTS.forEach(c => c.destroy()); CHARTS.clear();
   CELLS.clear(); EXEC_N = 0; CELL_N = 0;
   document.getElementById('cells').innerHTML = '';
