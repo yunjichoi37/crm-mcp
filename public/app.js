@@ -7,8 +7,6 @@ let CHAT_TABLE_N = 0;
 let currentAbortController = null;
 const CELL_ABORTS = new Map();
 const CELLS      = new Map();
-const CHARTS     = new Map();
-let _lastFocusedTA = null;
 let currentMode  = 'chat';
 
 // Makino Cloud 테이블 카탈로그 (CLAUDE.md 기반)
@@ -117,7 +115,7 @@ function newSession() {
   const w = document.createElement('div');
   w.id = 'chat-welcome'; w.className = 'chat-welcome';
   w.innerHTML = `<h2>무엇이든 물어보세요</h2>
-    <p>오른쪽 Data 탭에서 테이블을 선택 후 자연어로 질문하세요</p>
+    <p>Makino CRM 데이터에 대해 자연어로 질문하세요</p>
     <div class="chat-welcome-chips">
       <span class="chip" onclick="quickChat('담당자별 활성 서비스케이스 개수 알려줘')">담당자별 활성 서비스케이스 개수</span>
       <span class="chip" onclick="quickChat('이번달 매출 합계는?')">이번달 매출</span>
@@ -125,7 +123,6 @@ function newSession() {
     </div>`;
   area.appendChild(w);
   CHAT_N = 0; CHAT_TABLE_N = 0;
-  CHARTS.forEach(c => c.destroy()); CHARTS.clear();
   CELLS.clear(); EXEC_N = 0; CELL_N = 0;
   document.getElementById('cells').innerHTML = '';
   document.getElementById('welcome-msg').style.display = '';
@@ -323,7 +320,7 @@ function addCell(type, text = '') {
   <div class="cell-in ${type}">
     <textarea class="cell-ta" id="ta-${id}" placeholder="${ph}"
       onkeydown="onCellKey(event,${id})" oninput="autoResizeTA(this);updatePreview(${id})"
-      onfocus="_lastFocusedTA=this" rows="2">${text}</textarea>
+      rows="2">${text}</textarea>
   </div>
   <div class="cell-out hidden" id="out-${id}"></div>`;
   document.getElementById('cells').appendChild(el);
@@ -335,7 +332,6 @@ function addCell(type, text = '') {
 }
 
 function deleteCell(id) {
-  destroyChart(id);
   document.getElementById(`cell-${id}`)?.remove();
   CELLS.delete(id);
   if (!document.getElementById('cells').children.length)
@@ -365,7 +361,6 @@ async function runCell(id) {
   const outEl = document.getElementById(`out-${id}`);
   const rBtn = document.getElementById(`rbtn-${id}`);
   const enEl = document.getElementById(`en-${id}`);
-  destroyChart(id);
   el.classList.add('running'); el.classList.remove('has-error');
   const abort = new AbortController();
   CELL_ABORTS.set(id, abort);
@@ -446,66 +441,6 @@ async function runSQL(id, sql, n, signal) {
 
 // ─── Shared Helpers ───────────────────────────────────────
 
-function switchTab(id, tab) {
-  document.querySelectorAll(`#out-${id} .res-tab`).forEach((t,i) =>
-    t.classList.toggle('active', (tab==='table'&&i===0)||(tab==='chart'&&i===1)));
-  const tbl = document.getElementById(`rt-${id}`);
-  const cht = document.getElementById(`rc-${id}`);
-  if (tbl) tbl.classList.toggle('active', tab === 'table');
-  if (cht) {
-    const wasOff = !cht.classList.contains('active');
-    cht.classList.toggle('active', tab === 'chart');
-    if (tab === 'chart' && wasOff && !CHARTS.has(id)) {
-      const cell = CELLS.get(id);
-      if (cell?.rows) renderSQLChart(id);
-    }
-  }
-}
-
-function toggleSQLBlock(id) {
-  const b = document.getElementById(`sqb-${id}`);
-  const c = document.getElementById(`sc-${id}`);
-  if (!b) return;
-  const show = b.style.display === 'none';
-  b.style.display = show ? 'block' : 'none';
-  c.textContent = show ? '▼' : '▶';
-}
-
-function renderSQLChart(id) {
-  const cell = CELLS.get(id); if (!cell?.rows) return;
-  const x = document.getElementById(`cx-${id}`)?.value;
-  const y = document.getElementById(`cy-${id}`)?.value;
-  const t = document.getElementById(`ct-${id}`)?.value || 'bar';
-  if (!x || !y) return;
-  drawChart(`cv-${id}`, { type: t, title: `${y} by ${x}`,
-    labels: cell.rows.slice(0,30).map(r=>String(r[x]??'')),
-    data: cell.rows.slice(0,30).map(r=>Number(r[y]??0)) });
-}
-
-const _colors = ['#6366f1','#34d399','#f59e0b','#f87171','#38bdf8','#a78bfa','#fb923c','#4ade80'];
-
-function drawChart(canvasId, d) {
-  const canvas = document.getElementById(canvasId); if (!canvas) return;
-  const existing = Chart.getChart(canvas); if (existing) existing.destroy();
-  const isPie = d.type === 'pie' || d.type === 'doughnut';
-  new Chart(canvas, {
-    type: d.type || 'bar',
-    data: { labels: d.labels, datasets: [{ label: d.title||'', data: d.data,
-      backgroundColor: isPie ? _colors : _colors[0]+'aa',
-      borderColor: isPie ? _colors : _colors[0], borderWidth: 1, tension: 0.35 }] },
-    options: { responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#64748b', font: { size: 11 } } },
-        title: { display: !!d.title, text: d.title, color: '#64748b', font: { size: 12 } } },
-      scales: isPie ? {} : {
-        x: { ticks: { color: '#475569', font: { size: 11 } }, grid: { color: '#131825' } },
-        y: { ticks: { color: '#475569', font: { size: 11 } }, grid: { color: '#131825' } } } },
-  });
-}
-
-function destroyChart(id) {
-  if (CHARTS.has(id)) { CHARTS.get(id).destroy(); CHARTS.delete(id); }
-}
-
 function autoResizeTA(ta) {
   ta.style.height = 'auto';
   ta.style.height = Math.min(ta.scrollHeight, 280) + 'px';
@@ -515,9 +450,10 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
 
-function toast(msg, ms = 2200) {
+function toast(msg, ms = 3200) {
   document.querySelector('.toast')?.remove();
-  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  const t = document.createElement('div'); t.className = 'toast';
+  t.innerHTML = `<span>${esc(msg)}</span><button class="toast-close" onclick="this.closest('.toast').remove()">×</button>`;
   document.body.appendChild(t); setTimeout(() => t.remove(), ms);
 }
 
@@ -532,7 +468,7 @@ async function runAll() {
 
 function clearAll() {
   document.querySelectorAll('.cell-out').forEach(o => { o.classList.add('hidden'); o.innerHTML = ''; });
-  CHARTS.forEach(c => c.destroy()); CHARTS.clear(); EXEC_N = 0;
+  EXEC_N = 0;
   document.querySelectorAll('.exec-num').forEach(e => { e.innerHTML = 'In [&nbsp;]:'; });
   document.querySelectorAll('.cell').forEach(e => e.classList.remove('running','has-error'));
 }
